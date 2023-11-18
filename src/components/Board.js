@@ -34,6 +34,7 @@ const secretPassages = {
     'Conservatory': 'Lounge',
     'Lounge': 'Conservatory',
   };
+
 const adjacency = {
     'Study': ['Hallway1', 'Hallway3'],
     'Hall': ['Hallway1', 'Hallway2'],
@@ -66,9 +67,31 @@ const Board = () => {
     const [currentAccusation, setCurrentAccusation] = useState({ character: '', weapon: '', room: '' });
     const [canMakeSuggestion, setCanMakeSuggestion] = useState(false);
 
+    const resetGame = () => {
+        // Reset all states to their initial values
+        setCurrentTurn(0);
+        setPositions(initialPositions);
+        setLogs([]);
+        setGameState({});
+      };
+
     // backend part
     const socket = useGameSocket();
     const [gameState, setGameState] = useState({});
+
+    useEffect(() => {
+        if (socket) {
+          socket.on('gameWon', (data) => {
+            alert(`Game Over! Winner: ${data.winner}\nAccusation: ${data.accusation.character} with the ${data.accusation.weapon} in the ${data.accusation.room}.`);
+            resetGame();
+        
+        });
+    
+          return () => {
+            socket.off('gameWon');
+          };
+        }
+      }, [socket]);
 
     useEffect(() => {
         if (socket) {
@@ -171,46 +194,33 @@ const Board = () => {
 
 
     return (
-      <div className="h-screen w-full flex">
-        <div className="flex-grow-0 flex-shrink-0 w-7/10 p-4">
-          <div className="grid grid-cols-5 gap-1">
-            {grid.flat().map((cell, index) => {
-              const isRoom = cell !== '' && !cell.includes('Hallway');
-              const cellStyle = {
-                padding: '20px',
-                minHeight: '100px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                border: '1px solid black',
-                backgroundColor: isRoom ? 'blue' : cell.includes('Hallway') ? 'gray' : 'transparent',
-                cursor: 'pointer',
-              };
-  
-              const charactersInCell = Object.entries(positions).filter(([_, value]) => value === cell).map(([key]) => key);
-  
-              return (
-                <div
-                  key={index}
-                  style={cellStyle}
-                  onClick={() => handleCellClick(cell)}
-                >
-                  {cell}
-                  {charactersInCell.map((character) => (
-                    <div key={character} style={{ marginTop: '5px' }}>{character}</div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
+    <div className="flex h-screen w-full bg-gray-100">
+      <div className="w-7/10 p-4">
+        <div className="grid grid-cols-5 gap-2">
+          {grid.flat().map((cell, index) => {
+            const isRoom = cell !== '' && !cell.includes('Hallway');
+            const roomClasses = isRoom ? 'bg-blue-200' : 'bg-gray-300';
+            const cellClasses = `flex flex-col justify-center items-center border border-gray-400 cursor-pointer p-4 min-h-[100px] ${roomClasses}`;
+
+            const charactersInCell = Object.entries(positions).filter(([_, value]) => value === cell).map(([key]) => key);
+
+            return (
+              <div key={index} className={cellClasses} onClick={() => handleCellClick(cell)}>
+                <span className="font-semibold">{cell}</span>
+                {charactersInCell.map((character) => (
+                  <span key={character} className="mt-1 text-sm text-gray-700">{character}</span>
+                ))}
+              </div>
+            );
+          })}
         </div>
+      </div>
 
 
-        <div className="w-3/10 p-4 flex flex-col">
-            <div className="mb-4 flex-grow-0">
-            <div className="text-lg font-bold">Current Turn: {characters[currentTurn]}</div>
-            </div>
+        <div className="w-3/10 p-4 bg-white shadow-lg">
+        <div className="mb-4">
+          <div className="text-lg font-bold text-gray-700">Current Turn: {characters[currentTurn]}</div>
+        </div>
           {canMakeSuggestion && (
             <div className="flex-grow-0 mb-4">
             <div>

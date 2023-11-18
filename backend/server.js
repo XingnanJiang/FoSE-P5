@@ -14,6 +14,12 @@ const io = socketIo(server, {
   }
 });
 
+const correctAnswer = {
+    character: "Prof. Plum",
+    weapon: "Dagger",
+    room: "Library"
+  };
+
 // 初始游戏状态，包括日志数组
 let gameState = {
   playerPositions: {
@@ -52,10 +58,16 @@ io.on('connection', (socket) => {
         });
         addLogEntry(`${action.character} made a suggestion with ${action.weapon} in the ${gameState.playerPositions[action.character]}`);
         break;
-      case 'accuse':
-        gameState.accusations.push(action);
-        addLogEntry(`${action.character} made an accusation with ${action.weapon} in the ${action.room}`);
-        break;
+        case 'accuse':
+            gameState.accusations.push(action);
+          
+            // 检查指控是否正确
+            if (action.character === correctAnswer.character &&
+                action.weapon === correctAnswer.weapon &&
+                action.room === correctAnswer.room) {
+              io.emit('gameWon', { winner: action.player, accusation: action });
+            }
+            break;
       default:
         break;
     }
