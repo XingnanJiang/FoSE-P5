@@ -22,10 +22,6 @@ const weapons = [
 const initialPositions = {
   'Miss Scarlet': 'Hallway2',
   'Prof. Plum': 'Hallway3',
-  'Mrs. Peacock': 'Hallway8',
-  'Mr. Green': 'Hallway11',
-  'Mrs. White': 'Hallway12',
-  'Col. Mustard': 'Hallway5',
 };
 
 const secretPassages = {
@@ -118,6 +114,7 @@ const Board = () => {
           socket.on('gameState', (state) => {
             setGameState(state);
             setPositions(state.playerPositions);
+            setCurrentTurn(state.currentTurn);
       
             // 确保更新日志信息
             if (state.logs && state.logs.length > 0) {
@@ -232,13 +229,14 @@ const Board = () => {
       };
       
       const handleMakeAccusation = () => {
-        setLogs([...logs, `${characters[currentTurn]} accuses ${currentAccusation.character} with the ${currentAccusation.weapon} in the ${currentAccusation.room}.`]);
+        const currentCharacter = characters[currentTurn];
+        setLogs([...logs, `${currentCharacter} accuses ${currentAccusation.character} with the ${currentAccusation.weapon} in the ${currentAccusation.room}.`]);
         setCurrentAccusation({ character: '', weapon: '', room: '' });
       
         // 发送指控动作到服务器
         somePlayerAction({
           type: 'accuse',
-          character: currentAccusation.character,
+          character: currentCharacter, // 发起指控的当前角色
           weapon: currentAccusation.weapon,
           room: currentAccusation.room
         });
