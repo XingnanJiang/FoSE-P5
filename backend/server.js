@@ -40,11 +40,8 @@ let gameState = {
   playerPositions: {
     'Miss Scarlet': 'Hallway2',
     'Prof. Plum': 'Hallway3',
-    'Mrs. Peacock': 'Hallway8',
-    'Mr. Green': 'Hallway11',
-    'Mrs. White': 'Hallway12',
-    'Col. Mustard': 'Hallway5',
   },
+  currentTurn: 0,
   suggestions: [],
   accusations: [],
   logs: [] // 添加一个日志数组
@@ -77,8 +74,9 @@ io.on('connection', (socket) => {
         });
         addLogEntry(`${action.character} made a suggestion with ${action.weapon} in the ${gameState.playerPositions[action.character]}`);
         break;
-        case 'accuse':
-            gameState.accusations.push(action);
+      case 'accuse':
+        gameState.accusations.push(action);
+        addLogEntry(`${action.player} accuses ${action.character} with the ${action.weapon} in the ${action.room}`);
           
             // 检查指控是否正确
             if (action.character === correctAnswer.character &&
@@ -89,6 +87,9 @@ io.on('connection', (socket) => {
             break;
       default:
         break;
+    }
+    if (action.type === 'move' || action.type === 'suggest' || action.type === 'accuse') {
+      gameState.currentTurn = (gameState.currentTurn + 1) % 2;
     }
     console.log('Current logs:', gameState.logs);
     io.emit('gameState', gameState);
