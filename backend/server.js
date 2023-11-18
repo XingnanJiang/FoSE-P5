@@ -20,6 +20,21 @@ const correctAnswer = {
     room: "Library"
   };
 
+  const cards = {
+    characters: ['Miss Scarlet', 'Prof. Plum', 'Mrs. Peacock', 'Mr. Green', 'Mrs. White', 'Col. Mustard'],
+    weapons: ['Candlestick', 'Dagger', 'Lead Pipe', 'Revolver', 'Rope', 'Wrench'],
+    rooms: ['study', 'hall', 'lounge', 'library', 'billiard', 'dining room', 'conservatory', 'ballroom', 'kitchen']
+  };
+  function assignCardsToPlayer() {
+    const shuffle = (array) => array.sort(() => Math.random() - 0.5);
+    return {
+      characterCards: shuffle(cards.characters).slice(0, 3),
+      weaponCards: shuffle(cards.weapons).slice(0, 3),
+      roomCards: shuffle(cards.rooms).slice(0, 3)
+    };
+  }
+  
+  let players = {};
 // 初始游戏状态，包括日志数组
 let gameState = {
   playerPositions: {
@@ -37,7 +52,11 @@ let gameState = {
 
 io.on('connection', (socket) => {
   console.log('A user connected');
+
+  players[socket.id] = { cards: assignCardsToPlayer() };
+
   socket.emit('gameState', gameState);
+  socket.emit('yourCards', players[socket.id].cards);
 
   socket.on('playerAction', (action) => {
     // 添加日志条目的辅助函数
@@ -75,8 +94,14 @@ io.on('connection', (socket) => {
     io.emit('gameState', gameState);
   });
 
+socket.on('cardClicked', (message) => {
+  io.emit('cardNotification', `Card clicked: ${message.type} - ${message.name}`);
+});
+
+
   socket.on('disconnect', () => {
     console.log('User disconnected');
+    delete players[socket.id];
   });
 });
 
