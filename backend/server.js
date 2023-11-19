@@ -25,14 +25,25 @@ const correctAnswer = {
     weapons: ['Candlestick', 'Dagger', 'Lead Pipe', 'Revolver', 'Rope', 'Wrench'],
     rooms: ['study', 'hall', 'lounge', 'library', 'billiard', 'dining room', 'conservatory', 'ballroom', 'kitchen']
   };
+  
+
   function assignCardsToPlayer() {
-    const shuffle = (array) => array.sort(() => Math.random() - 0.5);
-    return {
-      characterCards: shuffle(cards.characters).slice(0, 3),
-      weaponCards: shuffle(cards.weapons).slice(0, 3),
-      roomCards: shuffle(cards.rooms).slice(0, 3)
+    // 直接分配卡片给两名玩家
+    const player1 = {
+      characterCards: cards.characters.slice(0, 3),
+      weaponCards: cards.weapons.slice(0, 3),
+      roomCards: cards.rooms.slice(0, 4)
     };
+  
+    const player2 = {
+      characterCards: cards.characters.slice(3, 6),
+      weaponCards: cards.weapons.slice(3, 6),
+      roomCards: cards.rooms.slice(4, 8)
+    };
+  
+    return [player1, player2];
   }
+
   
   let players = {};
 // 初始游戏状态，包括日志数组
@@ -50,10 +61,26 @@ let gameState = {
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  players[socket.id] = { cards: assignCardsToPlayer() };
 
+  players[socket.id] = {}; // 初始化玩家对象
+
+  // 检查是否已有两名玩家连接
+  if (Object.keys(players).length === 2) {
+    // 分配卡片给两名玩家
+    const [player1Cards, player2Cards] = assignCardsToPlayer();
+    const playerIds = Object.keys(players);
+    players[playerIds[0]].cards = player1Cards;
+    players[playerIds[1]].cards = player2Cards;
+
+    // 向两名玩家发送他们的卡片
+    playerIds.forEach((playerId) => {
+      io.to(playerId).emit('yourCards', players[playerId].cards);
+    });
+  }
+
+  // 发送游戏状态和玩家卡片（如果已分配）
   socket.emit('gameState', gameState);
-  socket.emit('yourCards', players[socket.id].cards);
+
 
   socket.on('playerAction', (action) => {
     // 添加日志条目的辅助函数
